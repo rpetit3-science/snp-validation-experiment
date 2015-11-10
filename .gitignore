@@ -1,3 +1,8 @@
+src/
+simulation/
+.ruffus_history.sqlite
+bin/third-party
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
