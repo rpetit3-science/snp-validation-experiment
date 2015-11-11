@@ -16,7 +16,6 @@ file <- args[1]
 file_without_ext <- gsub(".txt$", "", file)
 results <- read.table(file, header=TRUE, sep = "\t")
 
-results$FNR <- 1 - results$TPR
 melt_results <- melt(
     results,
     id.vars=c("variants", "coverage"),

@@ -84,32 +84,33 @@ if __name__ == '__main__':
         results['TP_count'] + results['FP_count'] + results['FN_count']
     )
 
-    results['TP'] = float('{0:.2f}'.format(
+    results['TP'] = float('{0:.4f}'.format(
         results['TP_count'] / float(results['true_variants'])
     ))
-    results['FP'] = float('{0:.2f}'.format(
+    results['FP'] = float('{0:.4f}'.format(
         results['FP_count'] / float(results['true_variants'])
     ))
-    results['FN'] = float('{0:.2f}'.format(
+    results['FN'] = float('{0:.4f}'.format(
         results['FN_count'] / float(results['true_variants'])
     ))
-    results['TN'] = float('{0:.2f}'.format(
+    results['TN'] = float('{0:.4f}'.format(
         results['TN_count'] / float(length)
     ))
 
-    results['TPR'] = float('{0:.2f}'.format(
+    results['TPR'] = float('{0:.4f}'.format(
         results['TP'] / (results['TP'] + results['FN'])
     ))
-    results['FPR'] = float('{0:.2f}'.format(
+    results['FPR'] = float('{0:.4f}'.format(
         results['FP'] / (results['FP'] + results['TN'])
     ))
-    results['TNR'] = float('{0:.2f}'.format(
+    results['FNR'] = float('{0:.4f}'.format(1 - results['TPR']))
+    results['TNR'] = float('{0:.4f}'.format(
         results['TN'] / (results['FP'] + results['TN'])
     ))
 
     cols = ['true_variants', 'true_snps', 'true_indels', 'called_variants',
-            'called_snps', 'called_indels', 'TPR', 'FPR', 'TNR', 'TP', 'FP',
-            'FN', 'TN', 'TP_count', 'FP_count', 'FN_count', 'TN_count']
+            'called_snps', 'called_indels', 'TPR', 'FPR', 'FNR', 'TNR', 'TP',
+            'FP', 'FN', 'TN', 'TP_count', 'FP_count', 'FN_count', 'TN_count']
     print 'input\t{0}'.format('\t'.join(cols))
     print '{0}\t{1}'.format(
         args.true_variants,

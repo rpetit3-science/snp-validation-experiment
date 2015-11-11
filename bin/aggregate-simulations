@@ -1,0 +1,22 @@
+#! /usr/bin/env python
+import argparse as ap
+import pandas as pd
+import numpy as np
+
+
+if __name__ == '__main__':
+    parser = ap.ArgumentParser(
+        prog='aggregate-simulaitons', conflict_handler='resolve',
+        description="Assess the results of all the simulations."
+    )
+
+    parser.add_argument('results', type=str, metavar="VALIDATION_OUTPUT",
+                        help='Output from validate-calls of all simulations.')
+    args = parser.parse_args()
+
+    df = pd.read_csv(args.results, sep='\t', header=(0))
+    print df['FPR']
+    grouped = df.groupby(['variants', 'coverage'], as_index=False)
+    means = grouped.aggregate(np.mean)
+    output = args.results.replace('.txt', '-aggregated.txt')
+    means.to_csv(output, sep='\t')
