@@ -43,13 +43,14 @@ if __name__ == '__main__':
         'called_variants': 0,
         'called_snps': 0,
         'called_indels': 0,
-        'TP': 0,
-        'FP': 0,
-        'FN': 0
+        'TP_count': 0,
+        'FP_count': 0,
+        'TN_count': 0,
     }
+    contig_length = 0
     with gzip.open(args.called_variants, "r") as f:
         for line in f:
-            if not line .startswith('#'):
+            if not line.startswith('#'):
                 line = line.rstrip()
                 cols = line.split('\t')
                 position = cols[1]
@@ -63,18 +64,54 @@ if __name__ == '__main__':
                     true_ref = true_variants[position]['ref']
                     true_alt = true_variants[position]['alt']
                     if true_ref == ref and true_alt == alt:
-                        results['TP'] += 1
+                        results['TP_count'] += 1
                     else:
-                        results['FP'] += 1
+                        results['FP_count'] += 1
+                else:
+                    results['FP_count'] += 1
 
                 if is_snp:
                     results['called_snps'] += 1
                 else:
                     results['called_indels'] += 1
+            elif line.startswith('##contig='):
+                # ##contig=<ID=gi|29165615|ref|NC_002745.2|,length=2814816>
+                info, length = line.split('length=')
+                length = length.split('>')[0]
 
-    results['FN'] = results['true_variants'] - results['called_variants']
+    results['FN_count'] = results['true_variants'] - results['called_variants']
+    results['TN_count'] = int(length) - (
+        results['TP_count'] + results['FP_count'] + results['FN_count']
+    )
+
+    results['TP'] = float('{0:.2f}'.format(
+        results['TP_count'] / float(results['true_variants'])
+    ))
+    results['FP'] = float('{0:.2f}'.format(
+        results['FP_count'] / float(results['true_variants'])
+    ))
+    results['FN'] = float('{0:.2f}'.format(
+        results['FN_count'] / float(results['true_variants'])
+    ))
+    results['TN'] = float('{0:.2f}'.format(
+        results['TN_count'] / float(length)
+    ))
+
+    results['TPR'] = float('{0:.2f}'.format(
+        results['TP'] / (results['TP'] + results['FN'])
+    ))
+    results['FPR'] = float('{0:.2f}'.format(
+        results['FP'] / (results['FP'] + results['TN'])
+    ))
+    results['TNR'] = float('{0:.2f}'.format(
+        results['TN'] / (results['FP'] + results['TN'])
+    ))
 
     cols = ['true_variants', 'true_snps', 'true_indels', 'called_variants',
-            'called_snps', 'called_indels', 'TP', 'FP', 'FN']
-    print '\t'.join(cols)
-    print '\t'.join([str(results[col]) for col in cols])
+            'called_snps', 'called_indels', 'TPR', 'FPR', 'TNR', 'TP', 'FP',
+            'FN', 'TN', 'TP_count', 'FP_count', 'FN_count', 'TN_count']
+    print 'input\t{0}'.format('\t'.join(cols))
+    print '{0}\t{1}'.format(
+        args.true_variants,
+        '\t'.join([str(results[col]) for col in cols])
+    )
