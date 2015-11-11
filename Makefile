@@ -48,7 +48,7 @@ COVERAGE := 1 5 10 15 20 25 30 35 40 45 50
 RUNS := $(foreach i,$(TOTAL_VARIANTS),$(foreach j,$(COVERAGE),run-$i-$j))
 variants = $(firstword $(subst -, ,$*))
 coverage = $(lastword $(subst -, ,$*))
-run_simulation: ${RUNS} gather_stats;
+run_simulation: ${RUNS} gather_stats plot_stats;
 
 ${RUNS}: run-%: ;
 	@echo Running simulation with $(variants) variants at $(coverage)x coverage.
@@ -71,8 +71,12 @@ ${RUNS}: run-%: ;
 	rm $(BASE_PREFIX).aln $(BASE_PREFIX).sam
 
 gather_stats: ;
+	mkdir results
 	sh -c 'find simulation/ -name "*.stats" | head -n 1 | xargs -I {} head -n 1 {} > simulation/validation_stats.txt'
 	sh -c 'find simulation/ -name "*.stats" |  xargs -I {} tail -n 1 {} >> simulation/validation_stats.txt'
 	sh -c "sed -i 's/^simulation\///; s/x\/n315_[0-9]*.variants//; s/\//\t/; s/^input/variants\tcoverage/' simulation/validation_stats.txt"
-	sh -c "sort -nk1,1 -nk2,2 simulation/validation_stats.txt > simulation/validation_stats_sorted.txt"
+	sh -c "sort -nk1,1 -nk2,2 simulation/validation_stats.txt > results/validation_stats_sorted.txt"
+
+plot_stats: ;
+	$(TOP_DIR)/bin/plot-stats.R results/validation_stats_sorted.txt
 
