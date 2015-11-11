@@ -31,7 +31,7 @@ art: ;
 	ln -s $(THIRD_PARTY)/art/art_illumina $(THIRD_PARTY_BIN)/art_illumina
 
 call_variants: ;
-	git clone git@github.com:rpetit3-science/call_variants.git $(THIRD_PARTY)/call_variants
+	git clone https://github.com/rpetit3-science/call_variants.git $(THIRD_PARTY)/call_variants
 	make -C $(THIRD_PARTY)/call_variants
 	make -C $(THIRD_PARTY)/call_variants test
 	ln -s $(THIRD_PARTY)/call_variants/bin/call_variants $(THIRD_PARTY_BIN)/call_variants
