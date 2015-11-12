@@ -43,8 +43,8 @@ REFERENCE_GENBANK := $(TOP_DIR)/data/n315.gb
 #RANDOM_SEED := 123456
 TOTAL_SIMULATION := 100
 SIMULATIONS := $(shell seq 1 ${TOTAL_SIMULATION})
-TOTAL_VARIANTS := 0 100 500 1000 5000 10000 15000 20000 30000 45000 60000 75000 100000
-COVERAGE := 1 5 10 15 20 25 30 35 40 45 50
+TOTAL_VARIANTS := 0 1000 5000 10000 25000 50000 75000 100000 150000
+COVERAGE := 1 5 10 15 20 25 30 40 50
 RUNS := $(foreach i,$(TOTAL_VARIANTS),$(foreach j,$(SIMULATIONS),$(foreach k,$(COVERAGE),run-$i-$j-$k)))
 variants = $(firstword $(subst -, ,$*))
 simulation = $(wordlist 2, 2, $(subst -, ,$*))
@@ -60,16 +60,15 @@ ${RUNS}: run-%: ;
 	# Create random mutations in the reference
 	$(TOP_DIR)/bin/mutate-reference $(REFERENCE_FASTA) $(OUT_DIR) --num_variants $(variants) --seed $(simulation)
 	# Simualte Reads using ART
-	$(THIRD_PARTY_BIN)/art_illumina -sam -i $(BASE_PREFIX).fasta -l 100 -ss HS20 -f $(coverage) -o $(BASE_PREFIX) -qs 2 -rs $(simulation)
-	gzip $(BASE_PREFIX).fq
+	$(THIRD_PARTY_BIN)/art_illumina -i $(BASE_PREFIX).fasta -l 100 -ss HS20 -f $(coverage) -o $(BASE_PREFIX) -qs 2 -rs $(simulation)
 	# Call variants
-	$(THIRD_PARTY_BIN)/call_variants $(BASE_PREFIX).fq.gz $(REFERENCE_FASTA) $(REFERENCE_GENBANK) \
+	$(THIRD_PARTY_BIN)/call_variants $(BASE_PREFIX).fq $(REFERENCE_FASTA) $(REFERENCE_GENBANK) \
 	                                 --output $(OUT_DIR) --read_length 100 -p 1 --log_times \
 	                                 --tag $(BASE_NAME)
 	# Assess the calls
 	$(TOP_DIR)/bin/validate-calls $(BASE_PREFIX).variants $(BASE_PREFIX).variants.vcf.gz > $(BASE_PREFIX).stats
 	# Clean Up
-	rm $(BASE_PREFIX).aln $(BASE_PREFIX).sam
+	rm $(BASE_PREFIX).aln $(BASE_PREFIX).fq
 
 gather_stats: ;
 	mkdir -p results
