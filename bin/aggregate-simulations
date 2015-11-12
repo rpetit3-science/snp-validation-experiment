@@ -15,8 +15,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     df = pd.read_csv(args.results, sep='\t', header=(0))
-    print df['FPR']
+
     grouped = df.groupby(['variants', 'coverage'], as_index=False)
     means = grouped.aggregate(np.mean)
+
     output = args.results.replace('.txt', '-aggregated.txt')
     means.to_csv(output, sep='\t')
