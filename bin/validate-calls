@@ -43,9 +43,9 @@ if __name__ == '__main__':
         'called_variants': 0,
         'called_snps': 0,
         'called_indels': 0,
-        'TP_count': 0,
-        'FP_count': 0,
-        'TN_count': 0,
+        'TP': 0,
+        'FP': 0,
+        'TN': 0,
     }
     contig_length = 0
     with gzip.open(args.called_variants, "r") as f:
@@ -64,11 +64,11 @@ if __name__ == '__main__':
                     true_ref = true_variants[position]['ref']
                     true_alt = true_variants[position]['alt']
                     if true_ref == ref and true_alt == alt:
-                        results['TP_count'] += 1
+                        results['TP'] += 1
                     else:
-                        results['FP_count'] += 1
+                        results['FP'] += 1
                 else:
-                    results['FP_count'] += 1
+                    results['FP'] += 1
 
                 if is_snp:
                     results['called_snps'] += 1
@@ -79,48 +79,47 @@ if __name__ == '__main__':
                 info, length = line.split('length=')
                 length = length.split('>')[0]
 
-    results['FN_count'] = results['true_variants'] - results['TP_count']
-    results['TN_count'] = int(length) - (
-        results['TP_count'] + results['FP_count'] + results['FN_count']
+    results['FN'] = results['true_variants'] - results['TP']
+    results['TN'] = int(length) - (
+        results['TP'] + results['FP'] + results['FN']
     )
 
+    # See Olson et al. 2015 frontiers in Genetics for calculations
     if results['true_variants']:
-        results['TP'] = float('{0:.4f}'.format(
-            results['TP_count'] / float(results['true_variants'])
-        ))
-        results['FP'] = float('{0:.4f}'.format(
-            results['FP_count'] / float(results['true_variants'])
-        ))
-        results['FN'] = float('{0:.4f}'.format(
-            results['FN_count'] / float(results['true_variants'])
-        ))
-        results['TN'] = float('{0:.4f}'.format(
-            results['TN_count'] / float(length)
-        ))
+        results['accuracy'] = (
+            float(results['TP'] + results['TN']) /
+            (results['TP'] + results['FP'] + results['FN'] + results['TN'])
+        )
 
-        results['TPR'] = float('{0:.4f}'.format(
-            results['TP'] / (results['TP'] + results['FN'])
-        ))
-        results['FPR'] = float('{0:.4f}'.format(
-            results['FP'] / (results['FP'] + results['TN'])
-        ))
-        results['FNR'] = float('{0:.4f}'.format(1 - results['TPR']))
-        results['TNR'] = float('{0:.4f}'.format(
-            results['TN'] / (results['FP'] + results['TN'])
-        ))
+        results['specificity'] = (
+            float(results['TN']) /
+            (results['FP'] + results['TN'])
+        )
+
+        results['sensitivity'] = (
+            float(results['TP']) /
+            (results['TP'] + results['FN'])
+        )
+
+        results['precision'] = (
+            float(results['TP']) /
+            (results['TP'] + results['FP'])
+        )
+
+        results['FPR'] = (
+            float(results['FP']) /
+            (results['TN'] + results['FP'])
+        )
     else:
-        results['TP'] = 0.0000
-        results['FP'] = 0.0000
-        results['FN'] = 0.0000
-        results['TN'] = 0.0000
-        results['TPR'] = 0.0000
+        results['accuracy'] = 0.0000
+        results['specificity'] = 0.0000
+        results['sensitivity'] = 0.0000
+        results['precision'] = 0.0000
         results['FPR'] = 0.0000
-        results['FNR'] = 0.0000
-        results['TNR'] = 0.0000
 
     cols = ['true_variants', 'true_snps', 'true_indels', 'called_variants',
-            'called_snps', 'called_indels', 'TPR', 'FPR', 'FNR', 'TNR', 'TP',
-            'FP', 'FN', 'TN', 'TP_count', 'FP_count', 'FN_count', 'TN_count']
+            'called_snps', 'called_indels', 'accuracy', 'specificity',
+            'sensitivity', 'precision', 'FPR', 'TP', 'FP', 'FN', 'TN']
     print 'input\t{0}'.format('\t'.join(cols))
     print '{0}\t{1}'.format(
         args.true_variants,
