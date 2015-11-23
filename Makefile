@@ -35,16 +35,18 @@ call_variants: ;
 	ln -s $(THIRD_PARTY)/call_variants/bin/call_variants $(THIRD_PARTY_BIN)/call_variants
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Run simulations.          .......................................           #
+# Run simulations.                                                            #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 REFERENCE := n315
 REFERENCE_FASTA := $(TOP_DIR)/data/n315.fasta
 REFERENCE_GENBANK := $(TOP_DIR)/data/n315.gb
-#RANDOM_SEED := 123456
-TOTAL_SIMULATION := 100
-SIMULATIONS := $(shell seq 1 ${TOTAL_SIMULATION})
-TOTAL_VARIANTS := 0 1000 5000 10000 25000 50000 75000 100000 150000
-COVERAGE := 1 5 10 15 20 25 30 40 50
+
+NUM_CPU ?= 1
+START ?= 1
+END ?= 100
+SIMULATIONS := $(shell seq $(START) $(END))
+TOTAL_VARIANTS ?= 0 10 100 500 1000 5000 10000 20000 30000 45000 60000 75000 90000 110000 130000 150000
+COVERAGE := 1 5 10 15 20 30 40 50 60 75 90 100
 RUNS := $(foreach i,$(TOTAL_VARIANTS),$(foreach j,$(SIMULATIONS),$(foreach k,$(COVERAGE),run-$i-$j-$k)))
 variants = $(firstword $(subst -, ,$*))
 simulation = $(wordlist 2, 2, $(subst -, ,$*))
@@ -52,31 +54,33 @@ coverage = $(lastword $(subst -, ,$*))
 run_simulation: ${RUNS} gather_stats plot_stats;
 
 ${RUNS}: run-%: ;
-	@echo Running simulation $(simulation) of $(TOTAL_SIMULATION) with $(variants) variants at $(coverage)x coverage.
-	$(eval OUT_DIR=simulation/$(variants)/$(simulation)/$(coverage)x)
-	$(eval BASE_PREFIX=$(OUT_DIR)/$(REFERENCE)_$(variants))
-	$(eval BASE_NAME=$(REFERENCE)_$(variants))
-	mkdir -p $(OUT_DIR)
-	# Create random mutations in the reference
-	$(TOP_DIR)/bin/mutate-reference $(REFERENCE_FASTA) $(OUT_DIR) --num_variants $(variants) --seed $(simulation)
-	# Simualte Reads using ART
-	$(THIRD_PARTY_BIN)/art_illumina -i $(BASE_PREFIX).fasta -l 100 -ss HS20 -f $(coverage) -o $(BASE_PREFIX) -qs 2 -rs $(simulation)
-	# Call variants
-	$(THIRD_PARTY_BIN)/call_variants $(BASE_PREFIX).fq $(REFERENCE_FASTA) $(REFERENCE_GENBANK) \
-	                                 --output $(OUT_DIR) --read_length 100 -p 1 --log_times \
-	                                 --tag $(BASE_NAME)
-	# Assess the calls
-	$(TOP_DIR)/bin/validate-calls $(BASE_PREFIX).variants $(BASE_PREFIX).variants.vcf.gz > $(BASE_PREFIX).stats
-	# Clean Up
-	rm $(BASE_PREFIX).aln $(BASE_PREFIX).fq
+    @echo Running simulation $(simulation) of $(TOTAL_SIMULATION) with $(variants) variants at $(coverage)x coverage.
+    $(eval OUT_DIR=simulation/$(variants)/$(simulation)/$(coverage)x)
+    $(eval BASE_PREFIX=$(OUT_DIR)/$(REFERENCE)_$(variants))
+    $(eval BASE_NAME=$(REFERENCE)_$(variants))
+    mkdir -p $(OUT_DIR)
+    # Create random mutations in the reference
+    $(TOP_DIR)/bin/mutate-reference $(REFERENCE_FASTA) $(OUT_DIR) --num_variants $(variants) --seed $(simulation)
+    # Simualte Reads using ART
+    $(THIRD_PARTY_BIN)/art_illumina -i $(BASE_PREFIX).fasta -l 100 -ss HS20 -f $(coverage) -o $(BASE_PREFIX) -qs 2 -rs $(simulation)
+    # Call variants
+    $(THIRD_PARTY_BIN)/call_variants $(BASE_PREFIX).fq $(REFERENCE_FASTA) $(REFERENCE_GENBANK) \
+                                     --output $(OUT_DIR) --read_length 100 -p $(NUM_CPU) --log_times \
+                                     --tag $(BASE_NAME)
+    # Assess the calls
+    $(TOP_DIR)/bin/validate-calls $(BASE_PREFIX).variants $(BASE_PREFIX).variants.vcf.gz > $(BASE_PREFIX).stats
+    # Clean Up
+    rm $(BASE_PREFIX).aln $(BASE_PREFIX).fq
+    gzip --best $(BASE_PREFIX).fasta
 
 gather_stats: ;
-	mkdir -p results
-	sh -c 'find simulation/ -name "*.stats" | head -n 1 | xargs -I {} head -n 1 {} > simulation/validation_stats.txt'
-	sh -c 'find simulation/ -name "*.stats" | xargs -I {} tail -n 1 {} >> simulation/validation_stats.txt'
-	sh -c "sed -i 's/^simulation\///; s/x\/n315_[0-9]*.variants//; s/\//\t/g; s/^input/variants\tsimulation\tcoverage/' simulation/validation_stats.txt"
-	sh -c "sort -nk1,1 -nk2,2 simulation/validation_stats.txt > results/validation_stats_sorted.txt"
-	$(TOP_DIR)/bin/aggregate-simulations results/validation_stats_sorted.txt
+    mkdir -p results
+    sh -c 'find simulation/ -name "*.stats" | head -n 1 | xargs -I {} head -n 1 {} > simulation/validation_stats.txt'
+    sh -c 'find simulation/ -name "*.stats" | xargs -I {} tail -n 1 {} >> simulation/validation_stats.txt'
+    sh -c "sed -i 's/^simulation\///; s/x\/n315_[0-9]*.variants//; s/\//\t/g; s/^input/variants\tsimulation\tcoverage/' simulation/validation_stats.txt"
+    sh -c "sort -nk1,1 -nk2,2 simulation/validation_stats.txt > results/validation_stats_sorted.txt"
+    $(TOP_DIR)/bin/aggregate-simulations results/validation_stats_sorted.txt
 
 plot_stats: ;
-	$(TOP_DIR)/bin/plot-stats.R results/validation_stats_sorted-aggregated.txt
+    $(TOP_DIR)/bin/plot-stats.R results/validation_stats_sorted-aggregated.txt
+
