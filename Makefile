@@ -48,7 +48,7 @@ START ?= 1
 END ?= 100
 SIMULATIONS := $(shell seq $(START) $(END))
 TOTAL_VARIANTS ?= 0 10 100 500 1000 5000 10000 20000 30000 45000 60000 75000 90000 110000 130000 150000
-COVERAGE := 1 5 10 15 20 30 40 50 60 75 90 100
+COVERAGE ?= 1 5 10 15 20 30 40 50 60 75 90 100
 RUNS := $(foreach i,$(TOTAL_VARIANTS),$(foreach j,$(SIMULATIONS),$(foreach k,$(COVERAGE),run-$i-$j-$k)))
 variants = $(firstword $(subst -, ,$*))
 simulation = $(wordlist 2, 2, $(subst -, ,$*))
@@ -66,7 +66,7 @@ ${RUNS}: run-%: ;
 	# Simualte Reads using ART
 	$(THIRD_PARTY_BIN)/art_illumina -i $(BASE_PREFIX).fasta -l 100 -ss HS20 -f $(coverage) -o $(BASE_PREFIX) -qs 2 -rs $(simulation)
 	# Call variants
-	$(THIRD_PARTY_BIN)/call_variants $(BASE_PREFIX).fq $(REFERENCE_FASTA) \
+	$(THIRD_PARTY_BIN)/call_variants $(BASE_PREFIX).fq $(REFERENCE_FASTA) $(REFERENCE_GENBANK) \
 									 --output $(OUT_DIR) --read_length 100  \
 									 -p $(NUM_CPU) --log_times --tag $(BASE_NAME)
 	# Assess the calls
